@@ -1,13 +1,11 @@
 diff --git a/Kptfile b/Kptfile
-index 6f2fe11..ef13516 100644
+index 6f2fe11..4489fa4 100644
 --- a/Kptfile
 +++ b/Kptfile
-@@ -4,4 +4,9 @@ metadata:
-   name: app
+@@ -5,3 +5,8 @@ metadata:
  pipeline:
    mutators:
--    - exec: "./testdata/fn-render/exec-function-stderr/function.sh"
-+    - exec: ./testdata/fn-render/exec-function-stderr/function.sh
+     - exec: "./testdata/fn-render/exec-function-stderr/function.sh"
 +status:
 +  conditions:
 +    - type: Rendered

@@ -1,18 +1,13 @@
 diff --git a/Kptfile b/Kptfile
-index 491b12e..9aad752 100644
+index 491b12e..e0bcc86 100644
 --- a/Kptfile
 +++ b/Kptfile
-@@ -1,16 +1,23 @@
- apiVersion: kpt.dev/v1
- kind: Kptfile
- metadata:
-+  name: bfs-parent-validator-fails
-+  labels:
-+    test: parent-fail
-   annotations:
+@@ -5,12 +5,19 @@ metadata:
      kpt.dev/bfs-rendering: "true"
      kpt.dev/save-on-render-failure: "true"
--  name: bfs-parent-validator-fails
+   name: bfs-parent-validator-fails
++  labels:
++    test: parent-fail
  info:
    description: BFS - Parent validator fails
  pipeline:

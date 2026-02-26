@@ -1,8 +1,14 @@
 diff --git a/Kptfile b/Kptfile
-index b3a89e3..0e34aa1 100644
+index b3a89e3..49fa9fe 100644
 --- a/Kptfile
 +++ b/Kptfile
-@@ -7,3 +7,8 @@ pipeline:
+@@ -2,8 +2,14 @@ apiVersion: kpt.dev/v1
+ kind: Kptfile
+ metadata:
+   name: app
++  namespace: staging
+ pipeline:
+   mutators:
      - image: ghcr.io/kptdev/krm-functions-catalog/set-namespace:v0.2.0
        configMap:
          namespace: staging

@@ -1,25 +1,11 @@
 diff --git a/Kptfile b/Kptfile
-index 7c3b09a..6a96376 100644
+index 7c3b09a..867f46f 100644
 --- a/Kptfile
 +++ b/Kptfile
-@@ -1,14 +1,19 @@
- apiVersion: kpt.dev/v1
- kind: Kptfile
- metadata:
-+  name: dfs-subpkg-validator-fails
-   annotations:
-     kpt.dev/save-on-render-failure: "true"
--  name: dfs-subpkg-validator-fails
- info:
-   description: DFS - Subpackage validator fails
- pipeline:
-   mutators:
-     - image: ghcr.io/kptdev/krm-functions-catalog/set-labels:v0.1.5
+@@ -12,3 +12,8 @@ pipeline:
        configMap:
--        test: "subpkg-fail"
--        level: "root"
-+        level: root
-+        test: subpkg-fail
+         test: "subpkg-fail"
+         level: "root"
 +status:
 +  conditions:
 +    - type: Rendered

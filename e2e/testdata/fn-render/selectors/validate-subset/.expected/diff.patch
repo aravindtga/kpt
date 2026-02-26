@@ -1,13 +1,8 @@
 diff --git a/Kptfile b/Kptfile
-index f9e90a2..44a8b91 100644
+index f9e90a2..ebd59b5 100644
 --- a/Kptfile
 +++ b/Kptfile
-@@ -4,7 +4,12 @@ metadata:
-   name: db
- pipeline:
-   validators:
--    - image: ghcr.io/kptdev/krm-functions-catalog/starlark:latest # validates httpbin deployment exists
-+    - image: ghcr.io/kptdev/krm-functions-catalog/starlark:latest
+@@ -8,3 +8,8 @@ pipeline:
        configPath: starlark-httpbin-val.yaml
        selectors:
          - kind: Deployment
