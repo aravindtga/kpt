@@ -231,6 +231,9 @@ func (e *Renderer) updateRenderStatus(hydErr error) {
 			"",
 		)
 	} else {
+		// Message is intentionally left empty because the hydration error
+		// contains absolute package paths that are non-deterministic. The
+		// detailed error is available through stderr and function results.
 		cond = kptfilev1.NewRenderCondition(
 			kptfilev1.ConditionFalse,
 			kptfilev1.ReasonRenderFailed,
