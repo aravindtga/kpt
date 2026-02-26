@@ -233,6 +233,8 @@ func (e *Renderer) updateRenderStatus(hydErr error) {
 	text := string(content)
 
 	// Find and replace an existing top-level status: field, or append.
+	// In Kptfile, status is always the last top-level section, so we
+	// replace everything from the status: line to the end of the file.
 	idx := findTopLevelField(text, "status:")
 	if idx >= 0 {
 		text = text[:idx] + statusYAML
