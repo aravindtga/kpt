@@ -661,7 +661,9 @@ func TestRenderer_Execute_SetsRenderFailureCondition(t *testing.T) {
 	rootPkgPath := rootString
 	assert.NoError(t, mockFileSystem.Mkdir(rootPkgPath))
 
-	// Write root Kptfile with an exec function (not allowed without --allow-exec)
+	// Write root Kptfile with an exec function (not allowed without --allow-exec).
+	// Since no resources are saved in this failure path, the status condition
+	// is NOT written to the Kptfile.
 	assert.NoError(t, mockFileSystem.WriteFile(filepath.Join(rootPkgPath, "Kptfile"), []byte(`
 apiVersion: kpt.dev/v1
 kind: Kptfile
@@ -681,15 +683,11 @@ pipeline:
 	_, err := renderer.Execute(ctx)
 	assert.Error(t, err)
 
-	// Re-read the Kptfile and verify the rendered condition was set with failure
+	// Re-read the Kptfile — status should NOT be set because resources
+	// were not saved (no save-on-render-failure annotation).
 	kf, readErr := kptfileutil.ReadKptfile(mockFileSystem, rootPkgPath)
 	assert.NoError(t, readErr)
-	assert.NotNil(t, kf.Status)
-	assert.Len(t, kf.Status.Conditions, 1)
-	assert.Equal(t, kptfilev1.ConditionTypeRendered, kf.Status.Conditions[0].Type)
-	assert.Equal(t, kptfilev1.ConditionFalse, kf.Status.Conditions[0].Status)
-	assert.Equal(t, kptfilev1.ReasonRenderFailed, kf.Status.Conditions[0].Reason)
-	assert.NotEmpty(t, kf.Status.Conditions[0].Message)
+	assert.Nil(t, kf.Status)
 }
 
 func TestRenderer_Execute_NestedPkg_SetsRenderSuccessCondition(t *testing.T) {

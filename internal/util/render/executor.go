@@ -110,8 +110,6 @@ func (e *Renderer) Execute(ctx context.Context) (*fnresult.ResultList, error) {
 
 	if hydErr != nil && !hctx.saveOnRenderFailure {
 		_ = e.saveFnResults(ctx, hctx.fnResults)
-		// Update render status condition in the root Kptfile
-		e.updateRenderStatus(kptfile, hydErr)
 		return hctx.fnResults, errors.E(op, root.pkg.UniquePath, hydErr)
 	}
 
@@ -175,8 +173,8 @@ func (e *Renderer) Execute(ctx context.Context) (*fnresult.ResultList, error) {
 	}
 
 	// Update render status condition in the root Kptfile after all resource
-	// writing is complete, so it is not overwritten by the package writer.
-	e.updateRenderStatus(kptfile, hydErr)
+	// writing is complete. Re-reads from disk to pick up pipeline mutations.
+	e.updateRenderStatus(hydErr)
 
 	if hydErr != nil {
 		_ = e.saveFnResults(ctx, hctx.fnResults) // Ignore save error to avoid masking hydration error
@@ -210,9 +208,17 @@ func (e *Renderer) saveFnResults(ctx context.Context, fnResults *fnresult.Result
 }
 
 // updateRenderStatus sets the Rendered condition in the root Kptfile status.
+// It re-reads the Kptfile from disk so pipeline mutations are preserved.
 // On success, it sets status=True with reason RenderSucceeded.
-// On failure, it sets status=False with reason RenderFailed and the error message.
-func (e *Renderer) updateRenderStatus(kf *kptfilev1.KptFile, hydErr error) {
+// On failure, it sets status=False with reason RenderFailed.
+func (e *Renderer) updateRenderStatus(hydErr error) {
+	// Re-read the Kptfile from disk so we don't overwrite mutations
+	// applied by the pipeline and persisted by the package writer.
+	kf, err := kptfileutil.ReadKptfile(e.FileSystem, e.PkgPath)
+	if err != nil {
+		return // best-effort; can't update status if Kptfile can't be read
+	}
+
 	if kf.Status == nil {
 		kf.Status = &kptfilev1.Status{}
 	}
@@ -228,7 +234,7 @@ func (e *Renderer) updateRenderStatus(kf *kptfilev1.KptFile, hydErr error) {
 		cond = kptfilev1.NewRenderCondition(
 			kptfilev1.ConditionFalse,
 			kptfilev1.ReasonRenderFailed,
-			hydErr.Error(),
+			"",
 		)
 	}
 
