@@ -155,6 +155,12 @@ func (e *Renderer) Execute(ctx context.Context) (*fnresult.ResultList, error) {
 					return nil, err
 				}
 			}
+
+			// Update render status condition in the root Kptfile after all resource
+			// writing is complete. Re-reads from disk to pick up pipeline mutations.
+			// Only done for in-place rendering; out-of-place/stdout modes do not
+			// modify the source package.
+			e.updateRenderStatus(hydErr)
 		}
 		e.printPipelineExecutionSummary(pr, *hctx, hydErr)
 	} else if hydErr == nil {
@@ -171,10 +177,6 @@ func (e *Renderer) Execute(ctx context.Context) (*fnresult.ResultList, error) {
 			return nil, fmt.Errorf("failed to write resources: %w", err)
 		}
 	}
-
-	// Update render status condition in the root Kptfile after all resource
-	// writing is complete. Re-reads from disk to pick up pipeline mutations.
-	e.updateRenderStatus(hydErr)
 
 	if hydErr != nil {
 		_ = e.saveFnResults(ctx, hctx.fnResults) // Ignore save error to avoid masking hydration error

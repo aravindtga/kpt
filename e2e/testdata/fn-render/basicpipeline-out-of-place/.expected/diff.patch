@@ -1,16 +1,3 @@
-diff --git a/Kptfile b/Kptfile
-index 1307fb5..1914bce 100644
---- a/Kptfile
-+++ b/Kptfile
-@@ -10,3 +10,8 @@ pipeline:
-     - image: ghcr.io/kptdev/krm-functions-catalog/set-labels:v0.1.5
-       configMap:
-         tier: backend
-+status:
-+  conditions:
-+    - type: Rendered
-+      status: "True"
-+      reason: RenderSucceeded
 diff --git a/out/Kptfile b/out/Kptfile
 new file mode 100644
 index 0000000..3a2c718
