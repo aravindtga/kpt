@@ -110,6 +110,8 @@ func (e *Renderer) Execute(ctx context.Context) (*fnresult.ResultList, error) {
 
 	if hydErr != nil && !hctx.saveOnRenderFailure {
 		_ = e.saveFnResults(ctx, hctx.fnResults)
+		// Update render status condition in the root Kptfile
+		e.updateRenderStatus(kptfile, hydErr)
 		return hctx.fnResults, errors.E(op, root.pkg.UniquePath, hydErr)
 	}
 
@@ -172,6 +174,10 @@ func (e *Renderer) Execute(ctx context.Context) (*fnresult.ResultList, error) {
 		}
 	}
 
+	// Update render status condition in the root Kptfile after all resource
+	// writing is complete, so it is not overwritten by the package writer.
+	e.updateRenderStatus(kptfile, hydErr)
+
 	if hydErr != nil {
 		_ = e.saveFnResults(ctx, hctx.fnResults) // Ignore save error to avoid masking hydration error
 		return hctx.fnResults, errors.E(op, root.pkg.UniquePath, hydErr)
@@ -201,6 +207,36 @@ func (e *Renderer) saveFnResults(ctx context.Context, fnResults *fnresult.Result
 
 	printerutil.PrintFnResultInfo(ctx, resultsFile, false)
 	return nil
+}
+
+// updateRenderStatus sets the Rendered condition in the root Kptfile status.
+// On success, it sets status=True with reason RenderSucceeded.
+// On failure, it sets status=False with reason RenderFailed and the error message.
+func (e *Renderer) updateRenderStatus(kf *kptfilev1.KptFile, hydErr error) {
+	if kf.Status == nil {
+		kf.Status = &kptfilev1.Status{}
+	}
+
+	var cond kptfilev1.Condition
+	if hydErr == nil {
+		cond = kptfilev1.NewRenderCondition(
+			kptfilev1.ConditionTrue,
+			kptfilev1.ReasonRenderSucceeded,
+			"",
+		)
+	} else {
+		cond = kptfilev1.NewRenderCondition(
+			kptfilev1.ConditionFalse,
+			kptfilev1.ReasonRenderFailed,
+			hydErr.Error(),
+		)
+	}
+
+	kf.Status.SetCondition(cond)
+
+	// Best-effort write; errors are not propagated to avoid masking the
+	// primary render result.
+	_ = kptfileutil.WriteFileToFS(e.FileSystem, e.PkgPath, kf)
 }
 
 // hydrationContext contains bits to track state of a package hydration.

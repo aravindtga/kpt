@@ -418,6 +418,39 @@ const (
 	SaveOnRenderFailureAnnotation = "kpt.dev/save-on-render-failure"
 )
 
+// Render condition type and reasons.
+const (
+	// ConditionTypeRendered is the condition type used to track render status.
+	ConditionTypeRendered = "Rendered"
+
+	// ReasonRenderSucceeded indicates that rendering completed successfully.
+	ReasonRenderSucceeded = "RenderSucceeded"
+	// ReasonRenderFailed indicates that rendering failed (e.g. mutation or validation error).
+	ReasonRenderFailed = "RenderFailed"
+)
+
+// NewRenderCondition creates a Condition representing the render status.
+func NewRenderCondition(status ConditionStatus, reason, message string) Condition {
+	return Condition{
+		Type:    ConditionTypeRendered,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+	}
+}
+
+// SetCondition adds or updates a condition of the given type in the Status.
+// If a condition with the same Type already exists, it is replaced.
+func (s *Status) SetCondition(c Condition) {
+	for i, existing := range s.Conditions {
+		if existing.Type == c.Type {
+			s.Conditions[i] = c
+			return
+		}
+	}
+	s.Conditions = append(s.Conditions, c)
+}
+
 func ToCondition(value string) ConditionStatus {
 	switch strings.ToLower(value) {
 	case strings.ToLower(string(ConditionTrue)):

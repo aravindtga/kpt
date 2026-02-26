@@ -25,6 +25,8 @@ import (
 	"github.com/kptdev/kpt/internal/fnruntime"
 	"github.com/kptdev/kpt/internal/pkg"
 	"github.com/kptdev/kpt/internal/types"
+	kptfilev1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
+	"github.com/kptdev/kpt/pkg/kptfile/kptfileutil"
 	"github.com/kptdev/kpt/pkg/printer"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
@@ -632,4 +634,76 @@ metadata:
 			}
 		})
 	}
+}
+
+func TestRenderer_Execute_SetsRenderSuccessCondition(t *testing.T) {
+	renderer, _, ctx := setupRendererTest(t, false)
+
+	_, err := renderer.Execute(ctx)
+	assert.NoError(t, err)
+
+	// Re-read the Kptfile and verify the rendered condition was set
+	kf, err := kptfileutil.ReadKptfile(renderer.FileSystem, renderer.PkgPath)
+	assert.NoError(t, err)
+	assert.NotNil(t, kf.Status)
+	assert.Len(t, kf.Status.Conditions, 1)
+	assert.Equal(t, kptfilev1.ConditionTypeRendered, kf.Status.Conditions[0].Type)
+	assert.Equal(t, kptfilev1.ConditionTrue, kf.Status.Conditions[0].Status)
+	assert.Equal(t, kptfilev1.ReasonRenderSucceeded, kf.Status.Conditions[0].Reason)
+	assert.Empty(t, kf.Status.Conditions[0].Message)
+}
+
+func TestRenderer_Execute_SetsRenderFailureCondition(t *testing.T) {
+	mockFileSystem := filesys.MakeFsInMemory()
+	var outputBuffer bytes.Buffer
+	ctx := printer.WithContext(context.Background(), printer.New(&outputBuffer, &outputBuffer))
+
+	rootPkgPath := rootString
+	assert.NoError(t, mockFileSystem.Mkdir(rootPkgPath))
+
+	// Write root Kptfile with an exec function (not allowed without --allow-exec)
+	assert.NoError(t, mockFileSystem.WriteFile(filepath.Join(rootPkgPath, "Kptfile"), []byte(`
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: root-package
+pipeline:
+  mutators:
+    - exec: /usr/local/bin/my-fn
+`)))
+
+	renderer := &Renderer{
+		PkgPath:        rootPkgPath,
+		ResultsDirPath: "/results",
+		FileSystem:     mockFileSystem,
+	}
+
+	_, err := renderer.Execute(ctx)
+	assert.Error(t, err)
+
+	// Re-read the Kptfile and verify the rendered condition was set with failure
+	kf, readErr := kptfileutil.ReadKptfile(mockFileSystem, rootPkgPath)
+	assert.NoError(t, readErr)
+	assert.NotNil(t, kf.Status)
+	assert.Len(t, kf.Status.Conditions, 1)
+	assert.Equal(t, kptfilev1.ConditionTypeRendered, kf.Status.Conditions[0].Type)
+	assert.Equal(t, kptfilev1.ConditionFalse, kf.Status.Conditions[0].Status)
+	assert.Equal(t, kptfilev1.ReasonRenderFailed, kf.Status.Conditions[0].Reason)
+	assert.NotEmpty(t, kf.Status.Conditions[0].Message)
+}
+
+func TestRenderer_Execute_NestedPkg_SetsRenderSuccessCondition(t *testing.T) {
+	// Test that nested packages result in a success condition in root Kptfile
+	renderer, _, ctx := setupRendererTest(t, true)
+
+	_, err := renderer.Execute(ctx)
+	assert.NoError(t, err)
+
+	kf, err := kptfileutil.ReadKptfile(renderer.FileSystem, renderer.PkgPath)
+	assert.NoError(t, err)
+	assert.NotNil(t, kf.Status)
+	assert.Len(t, kf.Status.Conditions, 1)
+	assert.Equal(t, kptfilev1.ConditionTypeRendered, kf.Status.Conditions[0].Type)
+	assert.Equal(t, kptfilev1.ConditionTrue, kf.Status.Conditions[0].Status)
+	assert.Equal(t, kptfilev1.ReasonRenderSucceeded, kf.Status.Conditions[0].Reason)
 }

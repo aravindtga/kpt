@@ -94,6 +94,21 @@ func WriteFile(dir string, k any) error {
 	return nil
 }
 
+// WriteFileToFS writes the Kptfile to the given directory using the provided
+// filesystem abstraction.
+func WriteFileToFS(fs filesys.FileSystem, dir string, k any) error {
+	const op errors.Op = "kptfileutil.WriteFileToFS"
+	b, err := yaml.MarshalWithOptions(k, &yaml.EncoderOptions{SeqIndent: yaml.WideSequenceStyle})
+	if err != nil {
+		return err
+	}
+	err = fs.WriteFile(filepath.Join(dir, kptfilev1.KptFileName), b)
+	if err != nil {
+		return errors.E(op, errors.IO, types.UniquePath(dir), err)
+	}
+	return nil
+}
+
 // ValidateInventory returns true and a nil error if the passed inventory
 // is valid; otherwiste, false and the reason the inventory is not valid
 // is returned. A valid inventory must have a non-empty namespace, name,
