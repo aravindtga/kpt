@@ -29,6 +29,7 @@ import (
 	"github.com/kptdev/kpt/pkg/lib/runneroptions"
 	"github.com/kptdev/kpt/pkg/printer"
 	"github.com/kptdev/kpt/pkg/printer/fake"
+	cp "github.com/otiai10/copy"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
 )
@@ -65,9 +66,19 @@ func TestRender(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			// Copy test data to a temp directory so rendering doesn't
+			// modify the source tree (updateRenderStatus writes status
+			// to the Kptfile on disk).
+			tmpDir := t.TempDir()
+			srcDir := filepath.Join(testdata, test.name, test.pkg)
+			dstDir := filepath.Join(tmpDir, test.pkg)
+			if err := cp.Copy(srcDir, dstDir); err != nil {
+				t.Fatalf("Failed to copy test data: %v", err)
+			}
+
 			var output bytes.Buffer
 			r := render.Renderer{
-				PkgPath:    filepath.Join(testdata, test.name, test.pkg),
+				PkgPath:    dstDir,
 				Runtime:    &runtime{},
 				FileSystem: filesys.FileSystemOrOnDisk{},
 				Output:     &output,

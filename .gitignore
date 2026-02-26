@@ -47,3 +47,4 @@ tmp/
 .hugo*
 resources/
 public/
+e2e.test
