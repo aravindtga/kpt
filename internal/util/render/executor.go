@@ -208,44 +208,56 @@ func (e *Renderer) saveFnResults(ctx context.Context, fnResults *fnresult.Result
 }
 
 // updateRenderStatus sets the Rendered condition in the root Kptfile status.
-// It re-reads the Kptfile from disk so pipeline mutations are preserved.
+// It uses raw string manipulation to append the status section without
+// reformatting the rest of the file.
 // On success, it sets status=True with reason RenderSucceeded.
 // On failure, it sets status=False with reason RenderFailed.
 func (e *Renderer) updateRenderStatus(hydErr error) {
-	// Re-read the Kptfile from disk so we don't overwrite mutations
-	// applied by the pipeline and persisted by the package writer.
-	kf, err := kptfileutil.ReadKptfile(e.FileSystem, e.PkgPath)
+	kptfilePath := filepath.Join(e.PkgPath, kptfilev1.KptFileName)
+
+	content, err := e.FileSystem.ReadFile(kptfilePath)
 	if err != nil {
-		return // best-effort; can't update status if Kptfile can't be read
+		return // best-effort
 	}
 
-	if kf.Status == nil {
-		kf.Status = &kptfilev1.Status{}
+	statusVal := string(kptfilev1.ConditionTrue)
+	reason := kptfilev1.ReasonRenderSucceeded
+	if hydErr != nil {
+		statusVal = string(kptfilev1.ConditionFalse)
+		reason = kptfilev1.ReasonRenderFailed
 	}
 
-	var cond kptfilev1.Condition
-	if hydErr == nil {
-		cond = kptfilev1.NewRenderCondition(
-			kptfilev1.ConditionTrue,
-			kptfilev1.ReasonRenderSucceeded,
-			"",
-		)
+	statusYAML := fmt.Sprintf("status:\n  conditions:\n    - type: %s\n      status: \"%s\"\n      reason: %s\n",
+		kptfilev1.ConditionTypeRendered, statusVal, reason)
+
+	text := string(content)
+
+	// Find and replace an existing top-level status: field, or append.
+	idx := findTopLevelField(text, "status:")
+	if idx >= 0 {
+		text = text[:idx] + statusYAML
 	} else {
-		// Message is intentionally left empty because the hydration error
-		// contains absolute package paths that are non-deterministic. The
-		// detailed error is available through stderr and function results.
-		cond = kptfilev1.NewRenderCondition(
-			kptfilev1.ConditionFalse,
-			kptfilev1.ReasonRenderFailed,
-			"",
-		)
+		if !strings.HasSuffix(text, "\n") {
+			text += "\n"
+		}
+		text += statusYAML
 	}
 
-	kf.Status.SetCondition(cond)
+	_ = e.FileSystem.WriteFile(kptfilePath, []byte(text))
+}
 
-	// Best-effort write; errors are not propagated to avoid masking the
-	// primary render result.
-	_ = kptfileutil.WriteFileToFS(e.FileSystem, e.PkgPath, kf)
+// findTopLevelField returns the byte index of a top-level YAML field in text.
+// A top-level field starts at column 0 (no leading whitespace).
+// Returns -1 if not found.
+func findTopLevelField(text, prefix string) int {
+	pos := 0
+	for _, line := range strings.Split(text, "\n") {
+		if strings.HasPrefix(line, prefix) {
+			return pos
+		}
+		pos += len(line) + 1
+	}
+	return -1
 }
 
 // hydrationContext contains bits to track state of a package hydration.

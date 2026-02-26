@@ -22,5 +22,10 @@ info:
   description: A Google Cloud Storage bucket
 pipeline:
   mutators:
-    - image: ghcr.io/kptdev/krm-functions-catalog/apply-setters:v0.2.0
-      configPath: setters.yaml
+  - image: ghcr.io/kptdev/krm-functions-catalog/apply-setters:v0.2.0
+    configPath: setters.yaml
+status:
+  conditions:
+  - type: Rendered
+    status: "True"
+    reason: RenderSucceeded
