@@ -210,58 +210,33 @@ func (e *Renderer) saveFnResults(ctx context.Context, fnResults *fnresult.Result
 }
 
 // updateRenderStatus sets the Rendered condition in the root Kptfile status.
-// It uses raw string manipulation to append the status section without
-// reformatting the rest of the file.
+// It reads the Kptfile, sets the condition, and writes it back.
 // On success, it sets status=True with reason RenderSucceeded.
 // On failure, it sets status=False with reason RenderFailed.
 func (e *Renderer) updateRenderStatus(hydErr error) {
-	kptfilePath := filepath.Join(e.PkgPath, kptfilev1.KptFileName)
-
-	content, err := e.FileSystem.ReadFile(kptfilePath)
+	kf, err := kptfileutil.ReadKptfile(e.FileSystem, e.PkgPath)
 	if err != nil {
 		return // best-effort
 	}
 
-	statusVal := string(kptfilev1.ConditionTrue)
+	condStatus := kptfilev1.ConditionTrue
 	reason := kptfilev1.ReasonRenderSucceeded
 	if hydErr != nil {
-		statusVal = string(kptfilev1.ConditionFalse)
+		condStatus = kptfilev1.ConditionFalse
 		reason = kptfilev1.ReasonRenderFailed
 	}
 
-	statusYAML := fmt.Sprintf("status:\n  conditions:\n    - type: %s\n      status: \"%s\"\n      reason: %s\n",
-		kptfilev1.ConditionTypeRendered, statusVal, reason)
-
-	text := string(content)
-
-	// Find and replace an existing top-level status: field, or append.
-	// In Kptfile, status is always the last top-level section, so we
-	// replace everything from the status: line to the end of the file.
-	idx := findTopLevelField(text, "status:")
-	if idx >= 0 {
-		text = text[:idx] + statusYAML
-	} else {
-		if !strings.HasSuffix(text, "\n") {
-			text += "\n"
-		}
-		text += statusYAML
+	condition := kptfilev1.NewRenderCondition(condStatus, reason, "")
+	if kf.Status == nil {
+		kf.Status = &kptfilev1.Status{}
 	}
+	kf.Status.SetCondition(condition)
 
-	_ = e.FileSystem.WriteFile(kptfilePath, []byte(text))
-}
-
-// findTopLevelField returns the byte index of a top-level YAML field in text.
-// A top-level field starts at column 0 (no leading whitespace).
-// Returns -1 if not found.
-func findTopLevelField(text, prefix string) int {
-	pos := 0
-	for _, line := range strings.Split(text, "\n") {
-		if strings.HasPrefix(line, prefix) {
-			return pos
-		}
-		pos += len(line) + 1
+	b, err := yaml.MarshalWithOptions(kf, &yaml.EncoderOptions{SeqIndent: yaml.WideSequenceStyle})
+	if err != nil {
+		return // best-effort
 	}
-	return -1
+	_ = e.FileSystem.WriteFile(filepath.Join(e.PkgPath, kptfilev1.KptFileName), b)
 }
 
 // hydrationContext contains bits to track state of a package hydration.

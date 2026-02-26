@@ -1,5 +1,5 @@
 diff --git a/Kptfile b/Kptfile
-index 0d98dbb..b3852fd 100644
+index 0d98dbb..4979451 100644
 --- a/Kptfile
 +++ b/Kptfile
 @@ -4,4 +4,9 @@ metadata:
@@ -7,7 +7,7 @@ index 0d98dbb..b3852fd 100644
  pipeline:
    mutators:
 -    - exec: "sed -e 's/foo/bar/'"
-+    - exec: "sed -e 's/bar/bar/'"
++    - exec: sed -e 's/bar/bar/'
 +status:
 +  conditions:
 +    - type: Rendered
