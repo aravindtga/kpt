@@ -155,6 +155,12 @@ func (e *Renderer) Execute(ctx context.Context) (*fnresult.ResultList, error) {
 					return nil, err
 				}
 			}
+
+			// Update render status condition in the root Kptfile after all resource
+			// writing is complete. Re-reads from disk to pick up pipeline mutations.
+			// Only done for in-place rendering; out-of-place/stdout modes do not
+			// modify the source package.
+			e.updateRenderStatus(hydErr)
 		}
 		e.printPipelineExecutionSummary(pr, *hctx, hydErr)
 	} else if hydErr == nil {
@@ -201,6 +207,36 @@ func (e *Renderer) saveFnResults(ctx context.Context, fnResults *fnresult.Result
 
 	printerutil.PrintFnResultInfo(ctx, resultsFile, false)
 	return nil
+}
+
+// updateRenderStatus sets the Rendered condition in the root Kptfile status.
+// It reads the Kptfile, sets the condition, and writes it back.
+// On success, it sets status=True with reason RenderSucceeded.
+// On failure, it sets status=False with reason RenderFailed.
+func (e *Renderer) updateRenderStatus(hydErr error) {
+	kf, err := kptfileutil.ReadKptfile(e.FileSystem, e.PkgPath)
+	if err != nil {
+		return // best-effort
+	}
+
+	condStatus := kptfilev1.ConditionTrue
+	reason := kptfilev1.ReasonRenderSucceeded
+	if hydErr != nil {
+		condStatus = kptfilev1.ConditionFalse
+		reason = kptfilev1.ReasonRenderFailed
+	}
+
+	condition := kptfilev1.NewRenderCondition(condStatus, reason, "")
+	if kf.Status == nil {
+		kf.Status = &kptfilev1.Status{}
+	}
+	kf.Status.SetCondition(condition)
+
+	b, err := yaml.MarshalWithOptions(kf, &yaml.EncoderOptions{SeqIndent: yaml.WideSequenceStyle})
+	if err != nil {
+		return // best-effort
+	}
+	_ = e.FileSystem.WriteFile(filepath.Join(e.PkgPath, kptfilev1.KptFileName), b)
 }
 
 // hydrationContext contains bits to track state of a package hydration.

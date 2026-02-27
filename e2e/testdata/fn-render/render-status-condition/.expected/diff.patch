@@ -1,0 +1,13 @@
+diff --git a/Kptfile b/Kptfile
+index dfcbe8a..43f98fb 100644
+--- a/Kptfile
++++ b/Kptfile
+@@ -3,3 +3,8 @@ kind: Kptfile
+ metadata:
+   name: render-status-test
+ pipeline: {}
++status:
++  conditions:
++    - type: Rendered
++      status: "True"
++      reason: RenderSucceeded
