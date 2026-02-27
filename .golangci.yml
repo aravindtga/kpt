@@ -1,12 +1,12 @@
 # Copyright 2019 Google Inc.  All Rights Reserved.
 
+version: "2"
+
 run:
   timeout: 5m
 
 linters:
-  # please, do not use `enable-all`: it's deprecated and will be removed soon.
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
-  disable-all: true
+  default: none
   enable:
     - bodyclose
     - dogsled
@@ -19,35 +19,46 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
 #    - gosec
-    - gosimple
     - govet
     - ineffassign
     - lll
     - misspell
     - nakedret
     - staticcheck
-    - stylecheck
     - revive
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
 
-issues:
-  exclude:
-     - Using the variable on range scope `tc` in function literal
-  exclude-dirs:
-    - thirdparty/
+  settings:
+    dupl:
+      threshold: 400
+    lll:
+      line-length: 170
+    gocyclo:
+      min-complexity: 30
+    staticcheck:
+      checks:
+        - "all"
+        - "-QF*"
 
-linters-settings:
-  dupl:
-    threshold: 400
-  lll:
-    line-length: 170
-  gocyclo:
-    min-complexity: 30
+  exclusions:
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+      - legacy
+    rules:
+      - linters:
+          - revive
+        text: "var-naming: avoid"
+    paths:
+      - thirdparty/
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
