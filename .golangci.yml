@@ -1,7 +1,7 @@
 # Copyright 2019 Google Inc.  All Rights Reserved.
 
 run:
-  deadline: 5m
+  timeout: 5m
 
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
@@ -50,5 +50,4 @@ linters-settings:
     line-length: 170
   gocyclo:
     min-complexity: 30
-  golint:
-    min-confidence: 0.85
+
