@@ -3,8 +3,8 @@ module github.com/kptdev/kpt/healthcheck
 go 1.26.2
 
 require (
-	k8s.io/apimachinery v0.36.0
-	sigs.k8s.io/controller-runtime v0.23.3
+	k8s.io/apimachinery v0.36.1
+	sigs.k8s.io/controller-runtime v0.24.1
 )
 
 require (
@@ -19,7 +19,6 @@ require (
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.36.0 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260427204847-8949caaa1199 // indirect
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5 // indirect
