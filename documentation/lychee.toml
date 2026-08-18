@@ -40,6 +40,9 @@ exclude = [
   "^https://github\\.com/orgs/.*/projects/",
   # Netlify intermittently blocks CI runners.
   "^https://www\\.netlify\\.com",
+  # Docsy theme "Edit this page" and "Create issue" links always redirect to login.
+  "^https://github\\.com/kptdev/kpt/edit/",
+  "^https://github\\.com/kptdev/kpt/issues/new",
 ]
 
 # Per-host rate limiting to avoid triggering abuse detection.
