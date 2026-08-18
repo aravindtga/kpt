@@ -47,6 +47,15 @@ jobs:
           hugo-version: ${{ steps.hugo-version.outputs.version }}
           extended: true
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: documentation/package.json
+
+      - name: Install Node dependencies
+        working-directory: documentation
+        run: npm install
+
       - name: Verify spelling
         working-directory: documentation
         run: make verify
