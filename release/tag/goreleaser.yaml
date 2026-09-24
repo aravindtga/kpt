@@ -69,7 +69,7 @@ dockers_v2:
       - linux-amd64
       - linux-arm64
     images:
-      - ghcr.io/kptdev/kpt
+      - ghcr.io/aravindtga/kpt
     tags:
       - "{{ .Tag }}"
       # `stable` tracks the latest non-prerelease release
@@ -139,7 +139,7 @@ changelog:
       - Merge branch
 release:
   github:
-    owner: kptdev
+    owner: aravindtga
     name: kpt
   draft: false
-  prerelease: true
+  prerelease: auto
