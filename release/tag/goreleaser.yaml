@@ -68,6 +68,7 @@ dockers_v2:
   - ids:
       - linux-amd64
       - linux-arm64
+    disable: '{{ if contains .Tag "api/" }}true{{ else }}false{{ end }}'
     images:
       - ghcr.io/aravindtga/kpt
     tags:
